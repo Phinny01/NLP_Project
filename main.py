@@ -1,8 +1,7 @@
-import pandas as pd
 import os
 import re
 
-def find_images_for_study_ids(base_path, positive_study_ids):
+def find_images_for_study_ids(base_path, positive_study_ids, label):
     """
     Traverse the directory structure starting from `base_path` to find images in folders
     that match any of the `positive_study_ids`.
@@ -15,6 +14,7 @@ def find_images_for_study_ids(base_path, positive_study_ids):
     - dict: A dictionary where keys are study_ids and values are lists of image paths.
     """
     positive_image_paths = {}
+    study_id_label = {}
     study_id_pattern = re.compile(r'\D+(\d+)')  # Regex to find digits after first non-digit characters
 
     for root, dirs, files in os.walk(base_path):
@@ -24,27 +24,17 @@ def find_images_for_study_ids(base_path, positive_study_ids):
             if current_study_id in positive_study_ids:
                 if current_study_id not in positive_image_paths:
                     positive_image_paths[current_study_id] = []
+                    study_id_label[current_study_id] = label
                 for file in files:
                     if file.lower().endswith(('.png', '.jpg', '.jpeg')):
                         positive_image_paths[current_study_id].append(os.path.join(root, file))
 
-    return positive_image_paths
+    return positive_image_paths, study_id_label
 
 
 
 # Assuming 'training_congruent.csv' has columns 'study_id', 'Pleural Effusion', 'Pneumonia', etc.
-data = pd.read_csv('training_congruent.csv')
 
-# Filtering for positive cases
-positive_cases_pn = set(data[data['Pneumonia'] == 1]['study_id'].astype(int))
-positive_cases_pf = set(data[(data['Pleural Effusion'] == 1)]['study_id'].astype(int))
-positive_cases_pn = set(data[(data['Pneumothorax'] == 1)]['study_id'].astype(int))
-positive_cases_pn = set(data[(data['Atelectasis'] == 1)]['study_id'].astype(int))
-positive_cases_pn = set(data[(data['No Finding'] == 1)]['study_id'].astype(int))
-base_path = 'train'
-
-# Using the modified function with extracted study IDs
-print(find_images_for_study_ids(base_path, positive_cases_pn))
 
 
 
