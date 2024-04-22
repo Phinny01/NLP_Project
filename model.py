@@ -62,20 +62,20 @@ def create_finetuned_model(input_shape, num_classes):
     model = models.Model(inputs, outputs)
     model.summary()  # Print the model summary to check the architecture
     return model
+
+
+
 if __name__ == '__main__':
     data = pd.read_csv('training_congruent.csv')
     label_dict = {'Pneumonia': 0, 'Pleural Effusion': 1, 'Pneumothorax': 2, "Atelectasis": 3}
     # Filtering for positive cases
     positive_cases_pn = set(data[data['Pneumonia'] == 1]['study_id'].astype(int))
     positive_cases_pe = set(data[(data['Pleural Effusion'] == 1)]['study_id'].astype(int))
-    # positive_cases_pt = set(data[(data['Pneumothorax'] == 1)]['study_id'].astype(int))
-    # positive_cases_at= set(data[(data['Atelectasis'] == 1)]['study_id'].astype(int))
 
     base_path = 'train'
     all_cases = [positive_cases_pn, positive_cases_pe]
 
     # Assuming base_path and positive_cases_pn are defined
-    # image_dict = find_images_for_study_ids(base_path, set(positive_cases_pn['study_id']))  # Needs definition
     model_path = '≈model.keras'
     if os.path.exists(model_path):
         print("Loading the existing model.")
@@ -86,8 +86,6 @@ if __name__ == '__main__':
         model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
     # Binary classification
     # Correct way to instantiate and use the Adam optimizer
-    # optimizer = Adam(learning_rate=0.001)  # You can adjust the learning rate and other parameters
-    # model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
     checkpoint_callback = ModelCheckpoint(model_path, save_best_only=True, monitor='val_loss', verbose=1)
 
 

@@ -68,24 +68,3 @@ def find_images_for_study_ids_test(base_path, positive_study_ids_list):
 
 
 
-# Assuming 'training_congruent.csv' has columns 'study_id', 'Pleural Effusion', 'Pneumonia', etc.
-
-
-
-
-
-
-# Printing the study_id of positive cases
-# print("Study IDs for positive cases of Pleural Effusion and Pneumonia:")
-# print(52823782.0 in positive_cases_pn['study_id'].values)
-# print(52823782.0 in positive_cases_pf['study_id'].values)
-
-
-
-
-
-
-# Now `positive_image_paths` contains the paths to all images for positive study IDs
-
-
-

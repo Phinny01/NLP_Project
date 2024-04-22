@@ -16,7 +16,6 @@ positive_cases_pt = set(data[(data['Pneumothorax'] == 1)]['study_id'].astype(int
 positive_cases_at = set(data[(data['Atelectasis'] == 1)]['study_id'].astype(int))
 positive_cases_nf = set(data[(data['No Finding'] == 1)]['study_id'].astype(int))
 # Chaining the | operator to combine all sets
-# all_cases = positive_cases_pn | positive_cases_pe 
 
 all_cases = [positive_cases_pn, positive_cases_pe]
 base_path = 'test'
