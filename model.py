@@ -7,6 +7,8 @@ import pandas as pd
 from  keras.utils import to_categorical
 from keras.callbacks import ModelCheckpoint
 import os
+import keras as keras
+
 
 
 def get_images_and_labels(image_dict, label_dict):
@@ -28,6 +30,8 @@ def get_images_and_labels(image_dict, label_dict):
 
 # Define a function for loading and preprocessing images
 def load_and_preprocess_image(path):
+    print("Type of path:", type(path)) 
+    print(path)
     img = tf.io.read_file(path)
     img = tf.image.decode_jpeg(img, channels=3)
     img = tf.image.resize(img, [128, 128])  # Resize to 128x128
@@ -35,7 +39,9 @@ def load_and_preprocess_image(path):
     return img
 
 def prepare_dataset(image_paths, labels, batch_size=32):
-    image_paths = tf.constant(image_paths)
+    # Ensure image_paths are treated as strings
+    image_paths = tf.constant(image_paths, dtype=tf.string)
+
     labels = tf.constant(labels)
     dataset = tf.data.Dataset.from_tensor_slices((image_paths, labels))
     dataset = dataset.map(lambda x, y: (load_and_preprocess_image(x), y), num_parallel_calls=tf.data.AUTOTUNE)
@@ -44,7 +50,7 @@ def prepare_dataset(image_paths, labels, batch_size=32):
 
 def create_finetuned_model(input_shape, num_classes):
     base_model = ResNet50(weights='imagenet', include_top=False, input_shape=input_shape)
-    base_model.trainable = False
+    base_model.trainable = True
     
     inputs = Input(shape=input_shape)
     x = base_model(inputs)
@@ -56,46 +62,47 @@ def create_finetuned_model(input_shape, num_classes):
     model = models.Model(inputs, outputs)
     model.summary()  # Print the model summary to check the architecture
     return model
+if __name__ == '__main__':
+    data = pd.read_csv('training_congruent.csv')
+    label_dict = {'Pneumonia': 0, 'Pleural Effusion': 1, 'Pneumothorax': 2, "Atelectasis": 3}
+    # Filtering for positive cases
+    positive_cases_pn = set(data[data['Pneumonia'] == 1]['study_id'].astype(int))
+    positive_cases_pe = set(data[(data['Pleural Effusion'] == 1)]['study_id'].astype(int))
+    # positive_cases_pt = set(data[(data['Pneumothorax'] == 1)]['study_id'].astype(int))
+    # positive_cases_at= set(data[(data['Atelectasis'] == 1)]['study_id'].astype(int))
 
-data = pd.read_csv('training_congruent.csv')
-label_dict = {'Pneumonia': 0, 'Pleural Effusion': 1, 'Pneumothorax': 2, "Atelectasis": 3}
-# Filtering for positive cases
-positive_cases_pn = set(data[data['Pneumonia'] == 1]['study_id'].astype(int))
-positive_cases_pe = set(data[(data['Pleural Effusion'] == 1)]['study_id'].astype(int))
-# positive_cases_pt = set(data[(data['Pneumothorax'] == 1)]['study_id'].astype(int))
-# positive_cases_at= set(data[(data['Atelectasis'] == 1)]['study_id'].astype(int))
+    base_path = 'train'
+    all_cases = [positive_cases_pn, positive_cases_pe]
 
-base_path = 'train'
-all_cases = [positive_cases_pn, positive_cases_pe]
-
-# Assuming base_path and positive_cases_pn are defined
-# image_dict = find_images_for_study_ids(base_path, set(positive_cases_pn['study_id']))  # Needs definition
-model_path = 'my_model.keras'
-if os.path.exists(model_path):
-    print("Loading the existing model.")
-    model = tf.keras.models.load_model(model_path)
-else:
-    print("Creating a new model.")
-    model = create_finetuned_model((128, 128, 3), 2)
-  # Binary classification
-# Correct way to instantiate and use the Adam optimizer
-optimizer = Adam(learning_rate=0.01)  # You can adjust the learning rate and other parameters
-model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
-checkpoint_callback = ModelCheckpoint(model_path, save_best_only=True, monitor='val_loss', verbose=1)
+    # Assuming base_path and positive_cases_pn are defined
+    # image_dict = find_images_for_study_ids(base_path, set(positive_cases_pn['study_id']))  # Needs definition
+    model_path = '≈model.keras'
+    if os.path.exists(model_path):
+        print("Loading the existing model.")
+        model = keras.models.load_model(model_path)
+    else:
+        print("Creating a new model.")
+        model = create_finetuned_model((128, 128, 3), 2)
+        model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+    # Binary classification
+    # Correct way to instantiate and use the Adam optimizer
+    # optimizer = Adam(learning_rate=0.001)  # You can adjust the learning rate and other parameters
+    # model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+    checkpoint_callback = ModelCheckpoint(model_path, save_best_only=True, monitor='val_loss', verbose=1)
 
 
-for i in range(len(all_cases)):
-    print(i)
-    image_dict, study_id_to_label = main.find_images_for_study_ids(base_path, all_cases[i], i)# Example empty dict, replace with actual dictionary from the function
-    image_paths, labels = get_images_and_labels(image_dict, study_id_to_label)
-    dataset = prepare_dataset(image_paths, labels) 
-  
-    # # Train the model
-    steps_per_epoch = len(dataset) // 32
-    model.fit(dataset, steps_per_epoch=steps_per_epoch, epochs=10, callbacks=[checkpoint_callback])
+    for i in range(len(all_cases)):
+        print(i)
+        image_dict, study_id_to_label = main.find_images_for_study_ids(base_path, all_cases[i], i)# Example empty dict, replace with actual dictionary from the function
+        image_paths, labels = get_images_and_labels(image_dict, study_id_to_label)
+        dataset = prepare_dataset(image_paths, labels) 
+     
+        # # Train the model
+        steps_per_epoch = len(dataset) // 32
+        model.fit(dataset, steps_per_epoch=steps_per_epoch, epochs=10, callbacks=[checkpoint_callback])
 
-model.save(model_path)  # Explicitly save the model after all training is complete
-print("Model saved at:", model_path)
+    model.save(model_path)  # Explicitly save the model after all training is complete
+    print("Model saved at:", model_path)
 
 
   
